@@ -24,9 +24,9 @@ app.include_router(referensi.router)
 
 
 LABEL = {
-    "password": "Password", "email": "Email", "username": "Username", "nama_asli": "Nama", "no_hp": "No. HP",
+    "password": "Password", "email": "Email", "username_atau_email": "Username atau email", "username": "Username", "nama_asli": "Nama", "no_hp": "No. HP",
     "nama_game": "Nama game", "harga": "Harga", "deskripsi": "Deskripsi", "spesifikasi": "Spesifikasi",
-    "release_date": "Tanggal rilis", "id_genre": "Genre", "id_game": "Game", "id_bank": "Bank",
+    "release_date": "Tanggal rilis", "id_genre": "Genre", "id_game": "Game", "id_bank": "Bank", "daftar_game": "Daftar game",
     "rating": "Rating", "review": "Ulasan", "nama_developer": "Nama developer",
 }
 
@@ -36,25 +36,33 @@ RENTANG = {"rating": (1, 5)}
 
 @app.exception_handler(RequestValidationError)
 async def pesan_validasi_ramah(request: Request, exc: RequestValidationError):
-    # semua error validasi dijadikan satu bentuk {"detail": "pesan"}, sama seperti error lainnya
     e = exc.errors()[0]
     kolom = str(e["loc"][-1])
+    if kolom.isdigit() and len(e["loc"]) > 1:  
+        kolom = str(e["loc"][-2])
     nama = LABEL.get(kolom, kolom)
     ctx = e.get("ctx", {})
     jenis = e["type"]
-    if jenis == "missing":
+    if jenis == "missing" or (e.get("input") is None and jenis.endswith("_type")):
         pesan = f"{nama} harus diisi"
+    elif jenis == "too_short":
+        pesan = "Pilih minimal satu game untuk dibeli" if kolom == "daftar_game" else f"{nama} tidak boleh kosong"
     elif jenis == "string_too_short":
         pesan = f"{nama} terlalu pendek (minimal {ctx.get('min_length')} karakter)"
     elif jenis == "string_too_long":
         pesan = f"{nama} terlalu panjang (maksimal {ctx.get('max_length')} karakter)"
+    elif kolom == "harga" and jenis == "greater_than_equal":
+        pesan = "Harga tidak boleh negatif"
+    elif kolom == "harga" and jenis == "less_than_equal":
+        pesan = "Harga terlalu besar"
+    elif jenis == "decimal_max_places":
+        pesan = f"{nama} maksimal 2 angka di belakang koma"
     elif jenis in ("less_than_equal", "greater_than_equal"):
         batas = RENTANG.get(kolom)
         pesan = f"{nama} harus antara {batas[0]} dan {batas[1]}" if batas else f"{nama} tidak valid"
     else:
         pesan = f"{nama} tidak valid"
     return JSONResponse(status_code=422, content={"detail": pesan})
-
 
 @app.get("/")
 def root():

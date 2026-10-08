@@ -7,12 +7,10 @@ from app.security import buat_token, user_saat_ini, hash_password, verifikasi_pa
 router = APIRouter(prefix="/api/auth", tags=["Akun"])
 
 
-def _verifikasi(db, email: str, password: str) -> dict:
-    """Mengambil data user dari database lalu memverifikasi password Bcrypt di FastAPI."""
+def _verifikasi(db, identitas: str, password: str) -> dict:
     try:
         with db.cursor() as cursor:
-            # Panggil procedure untuk mengambil data user berdasarkan email
-            cursor.execute("CALL proc_ambil_login_user(%s)", (email,))
+            cursor.execute("CALL proc_ambil_login_user(%s)", (identitas,))
             user = cursor.fetchone()
             while cursor.nextset():
                 pass
@@ -21,16 +19,14 @@ def _verifikasi(db, email: str, password: str) -> dict:
             raise HTTPException(status_code=401, detail=e.args[1])
         raise HTTPException(status_code=500, detail="Terjadi kesalahan, silakan coba lagi nanti")
 
-    # Cek apakah user ada DAN password cocok dengan hash Bcrypt
     if not user or not verifikasi_password(password, user["password"]):
-        raise HTTPException(status_code=401, detail="Email atau password salah")
+        raise HTTPException(status_code=401, detail="Username/email atau password salah")
 
     return user
 
 
 @router.post("/register", status_code=201)
 def register(body: RegisterRequest, db=Depends(get_db)):
-    # Hash password menggunakan Bcrypt sebelum dikirim ke Database
     hashed_pwd = hash_password(body.password)
 
     try:
@@ -47,7 +43,7 @@ def register(body: RegisterRequest, db=Depends(get_db)):
         raise HTTPException(status_code=500, detail="Terjadi kesalahan, silakan coba lagi nanti")
     except pymysql.err.IntegrityError as e:
         if e.args[0] == 1062:
-            raise HTTPException(status_code=400, detail="Email ini sudah terdaftar")
+            raise HTTPException(status_code=400, detail="Username atau email ini sudah terdaftar")
         raise HTTPException(status_code=500, detail="Terjadi kesalahan, silakan coba lagi nanti")
 
 
@@ -63,7 +59,7 @@ def _profil(user: dict) -> dict:
 
 @router.post("/login")
 def login(body: LoginRequest, db=Depends(get_db)):
-    user = _verifikasi(db, body.email, body.password)
+    user = _verifikasi(db, body.username_atau_email, body.password)
     token, detik = buat_token(user)
     return {
         "message": "Login berhasil",

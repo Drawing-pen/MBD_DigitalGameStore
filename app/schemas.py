@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Any
 from datetime import date
+from decimal import Decimal
 
 
 class TambahKeranjangRequest(BaseModel):
@@ -9,6 +10,7 @@ class TambahKeranjangRequest(BaseModel):
 
 class CheckoutRequest(BaseModel):
     id_bank: int
+    daftar_game: list[int] = Field(min_length=1)   # game yang dipilih (dari keranjang atau beli langsung)
 
 
 class BeriRatingRequest(BaseModel):
@@ -21,7 +23,7 @@ class TambahGameRequest(BaseModel):
     nama_game: str
     deskripsi: Optional[str] = None
     spesifikasi: Optional[dict[str, Any]] = None
-    harga: float
+    harga: Decimal = Field(ge=0, le=Decimal('9999999999.99'), decimal_places=2)
     release_date: Optional[date] = None
     id_genre: Optional[int] = None
 
@@ -30,12 +32,12 @@ class RegisterRequest(BaseModel):
     username: str
     email: str
     password: str = Field(min_length=6, max_length=128)   
-    no_hp: Optional[str] = None
-    nama_asli: Optional[str] = None
+    no_hp: str
+    nama_asli: str
 
 
 class LoginRequest(BaseModel):
-    email: str
+    username_atau_email: str
     password: str = Field(max_length=128)
 
 

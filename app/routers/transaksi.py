@@ -12,8 +12,8 @@ def checkout(body: CheckoutRequest, user=Depends(user_saat_ini), db=Depends(get_
     try:
         with db.cursor() as cursor:
             cursor.execute(
-                "CALL proc_checkout(%s, %s)",
-                (user["id_user"], body.id_bank),
+                "CALL proc_checkout(%s, %s, %s)",
+                (user["id_user"], body.id_bank, ",".join(str(i) for i in sorted(set(body.daftar_game)))),
             )
             hasil = cursor.fetchone()  
         return {"message": "Checkout berhasil", "data": hasil}

@@ -8,11 +8,11 @@ CREATE TABLE genre (
 
 CREATE TABLE user (
     id_user INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    no_hp VARCHAR(20),
-    nama_asli VARCHAR(100)
+    no_hp VARCHAR(20) NOT NULL,
+    nama_asli VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE developer (

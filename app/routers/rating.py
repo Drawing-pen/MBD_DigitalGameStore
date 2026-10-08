@@ -42,8 +42,13 @@ def lihat_semua_rating(db=Depends(get_db)):
 
 
 @router.get("/{id_game}")
-def lihat_rating_game(id_game: int, db=Depends(get_db)):
-    with db.cursor() as cursor:
-        cursor.execute("CALL proc_lihat_rating_game(%s)", (id_game,))
-        hasil = cursor.fetchall()
-    return hasil
+def lihat_ulasan_game(id_game: int, db=Depends(get_db)):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("CALL proc_lihat_rating_game(%s)", (id_game,))
+            hasil = cursor.fetchall()
+        return hasil
+    except pymysql.err.OperationalError as e:
+        if e.args[0] == 1644:
+            raise HTTPException(status_code=404, detail=e.args[1])
+        raise HTTPException(status_code=500, detail="Terjadi kesalahan, silakan coba lagi nanti")

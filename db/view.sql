@@ -21,6 +21,7 @@ CREATE VIEW v_isi_keranjang AS
 SELECT
     k.id_keranjang,
     k.id_user,
+    k.id_game,
     u.nama_asli AS nama_user,
     g.nama_game,
     g.harga_game
@@ -45,6 +46,18 @@ SELECT
         ) DESC
     ) AS peringkat
 FROM game g;
+
+CREATE VIEW v_ulasan_game AS
+SELECT
+    r.id_rating,
+    r.id_game,
+    g.nama_game,
+    u.username,
+    r.rating,
+    r.review
+FROM rating r
+JOIN user u ON u.id_user = r.id_user
+JOIN game g ON g.id_game = r.id_game;
 
 CREATE VIEW v_katalog_game AS
 SELECT
@@ -130,4 +143,9 @@ SELECT
         FROM developer d
         WHERE d.id_developer = u.id_user
     ) AS nama_developer
+FROM user u;
+
+CREATE VIEW v_profil_user AS
+SELECT u.id_user, u.username, u.email, u.no_hp, u.nama_asli,
+  EXISTS (SELECT 1 FROM developer d WHERE d.id_developer = u.id_user) AS adalah_developer
 FROM user u;

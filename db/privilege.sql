@@ -25,4 +25,6 @@ GRANT EXECUTE ON PROCEDURE toko_game_digital.proc_lihat_game_developer TO 'akun_
 GRANT EXECUTE ON PROCEDURE toko_game_digital.proc_lihat_genre TO 'akun_backend'@'localhost';
 GRANT EXECUTE ON PROCEDURE toko_game_digital.proc_lihat_bank TO 'akun_backend'@'localhost';
 
+GRANT EXECUTE ON PROCEDURE toko_game_digital.proc_hapus_game TO 'akun_backend'@'localhost';
+
 FLUSH PRIVILEGES;

@@ -20,7 +20,7 @@ def tambah_game(body: TambahGameRequest, user=Depends(user_saat_ini), db=Depends
                     json.dumps(body.spesifikasi) if body.spesifikasi is not None else None,
                     body.harga,
                     body.release_date,
-                    user["id_user"],        # id developer = id akun yang login
+                    user["id_user"],       
                     body.id_genre,
                 ),
             )
@@ -47,3 +47,14 @@ def lihat_katalog_game(
         if game["spesifikasi_game"]:
             game["spesifikasi_game"] = json.loads(game["spesifikasi_game"])
     return hasil
+
+@router.delete("/{id_game}")
+def hapus_game(id_game: int, user=Depends(user_saat_ini), db=Depends(get_db)):
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("CALL proc_hapus_game(%s, %s)", (user["id_user"], id_game))
+        return {"message": "Game berhasil dihapus"}
+    except pymysql.err.OperationalError as e:
+        if e.args[0] == 1644:
+            raise HTTPException(status_code=400, detail=e.args[1])
+        raise HTTPException(status_code=500, detail="Terjadi kesalahan, silakan coba lagi nanti")

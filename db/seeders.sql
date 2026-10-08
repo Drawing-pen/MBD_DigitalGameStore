@@ -13,13 +13,11 @@ CALL proc_insert_bank('Mandiri', '008');
 CALL proc_insert_bank('BNI',     '009');
 CALL proc_insert_bank('BRI',     '002');
 
--- user (id 1-3 pembeli, id 4-5 akun studio yang akan menjadi developer)
--- Semua akun di bawah ini memiliki password plain text: pw12345
-CALL proc_tambah_user('budi123',    'budi@email.com',    '$2b$12$eA8eN6E51O8R8U7G.7a6I.3qHl43R6Lp46ZfE01L3a02O9/8E.J4u', '081234567801', 'Budi Santoso');
-CALL proc_tambah_user('siti_n',     'siti@email.com',    '$2b$12$eA8eN6E51O8R8U7G.7a6I.3qHl43R6Lp46ZfE01L3a02O9/8E.J4u', '081234567802', 'Siti Nurhaliza');
-CALL proc_tambah_user('andi_p',     'andi@email.com',    '$2b$12$eA8eN6E51O8R8U7G.7a6I.3qHl43R6Lp46ZfE01L3a02O9/8E.J4u', '081234567803', 'Andi Pratama');
-CALL proc_tambah_user('riot_games', 'dev@riotgames.com', '$2b$12$eA8eN6E51O8R8U7G.7a6I.3qHl43R6Lp46ZfE01L3a02O9/8E.J4u', NULL, 'Riot Games');
-CALL proc_tambah_user('toby_fox',   'dev@tobyfox.com',   '$2b$12$eA8eN6E51O8R8U7G.7a6I.3qHl43R6Lp46ZfE01L3a02O9/8E.J4u', NULL, 'Toby Fox');
+CALL proc_tambah_user('budi123',    'budi@email.com',    '$2b$12$5W2jGsU2WGUC.iyufNJwxORLq/Cfc5nza4GKdcRGGVQ4agiGJ1D9G', '081234567801', 'Budi Santoso');
+CALL proc_tambah_user('siti_n',     'siti@email.com',    '$2b$12$5W2jGsU2WGUC.iyufNJwxORLq/Cfc5nza4GKdcRGGVQ4agiGJ1D9G', '081234567802', 'Siti Nurhaliza');
+CALL proc_tambah_user('andi_p',     'andi@email.com',    '$2b$12$5W2jGsU2WGUC.iyufNJwxORLq/Cfc5nza4GKdcRGGVQ4agiGJ1D9G', '081234567803', 'Andi Pratama');
+CALL proc_tambah_user('riot_games', 'dev@riotgames.com', '$2b$12$5W2jGsU2WGUC.iyufNJwxORLq/Cfc5nza4GKdcRGGVQ4agiGJ1D9G', '081234567804', 'Riot Games');
+CALL proc_tambah_user('toby_fox',   'dev@tobyfox.com',   '$2b$12$5W2jGsU2WGUC.iyufNJwxORLq/Cfc5nza4GKdcRGGVQ4agiGJ1D9G', '081234567805', 'Toby Fox');
 
 -- developer
 CALL proc_daftar_developer(4, 'Riot Games', 'Studio game kompetitif');

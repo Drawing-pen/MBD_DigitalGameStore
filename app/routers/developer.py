@@ -9,7 +9,6 @@ router = APIRouter(prefix="/api/developer", tags=["Developer"])
 
 @router.post("/daftar", status_code=201)
 def daftar_developer(body: DaftarDeveloperRequest, user=Depends(user_saat_ini), db=Depends(get_db)):
-    # satu akun, dua pintu: yang login sudah terbukti lewat token, tidak perlu password lagi
     try:
         with db.cursor() as cursor:
             cursor.execute(
@@ -26,7 +25,7 @@ def daftar_developer(body: DaftarDeveloperRequest, user=Depends(user_saat_ini), 
             raise HTTPException(status_code=400, detail=e.args[1])
         raise HTTPException(status_code=500, detail="Terjadi kesalahan, silakan coba lagi nanti")
     except pymysql.err.IntegrityError as e:
-        if e.args[0] == 1062:   # dua permintaan daftar masuk bersamaan
+        if e.args[0] == 1062:   
             raise HTTPException(status_code=400, detail="Akun ini sudah terdaftar sebagai developer")
         raise HTTPException(status_code=500, detail="Terjadi kesalahan, silakan coba lagi nanti")
 

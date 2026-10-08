@@ -55,4 +55,12 @@ BEGIN
     WHERE id_developer = NEW.id_developer;
 END$$
 
+CREATE TRIGGER trg_kurangi_jumlah_game_developer
+AFTER DELETE ON developerGame
+FOR EACH ROW
+BEGIN
+    UPDATE developer SET jumlah_game = jumlah_game - 1
+    WHERE id_developer = OLD.id_developer;
+END$$
+
 DELIMITER ;

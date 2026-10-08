@@ -60,11 +60,12 @@ BEGIN
 END$$
 
 -- UC1: checkout game
-CREATE PROCEDURE proc_checkout(IN p_id_user INT, IN p_id_bank INT)
+CREATE PROCEDURE proc_checkout(
+    IN p_id_user INT, IN p_id_bank INT, IN p_daftar_game VARCHAR(1000))  
 BEGIN
     DECLARE v_id_transaksi INT;
     DECLARE v_total DECIMAL(12,2);
-    DECLARE v_jumlah_item INT;
+    DECLARE v_jumlah_diminta INT;
     DECLARE v_kode_bank VARCHAR(10);
     DECLARE v_nomor_va VARCHAR(30);
     DECLARE done INT DEFAULT 0;
@@ -73,63 +74,44 @@ BEGIN
 
     DECLARE cur CURSOR FOR
         SELECT g.id_game, g.harga_game
-        FROM keranjang k
-        JOIN game g ON g.id_game = k.id_game
-        WHERE k.id_user = p_id_user;
+        FROM game g
+        WHERE FIND_IN_SET(g.id_game, p_daftar_game) > 0;
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
-
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
+    BEGIN ROLLBACK; RESIGNAL; END;
 
     START TRANSACTION;
 
-    SET v_jumlah_item = func_hitung_jumlah_item_keranjang(p_id_user);
-    SET v_total = func_hitung_total_belanja(p_id_user);
+    SET v_jumlah_diminta = func_hitung_game_diminta(p_daftar_game);
+    SET v_total          = func_hitung_total_pilihan(p_daftar_game);
 
-    IF v_jumlah_item = 0 THEN
-        ROLLBACK;
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Keranjang masih kosong';
+    IF v_jumlah_diminta = 0 THEN
+        ROLLBACK; SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Pilih minimal satu game untuk dibeli';
+    
+    ELSEIF func_hitung_game_valid(p_daftar_game) <> v_jumlah_diminta THEN
+        ROLLBACK; SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ada game yang tidak ditemukan';
+    
+    ELSEIF func_hitung_game_sudah_dimiliki(p_id_user, p_daftar_game) > 0 THEN
+        ROLLBACK; SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ada game yang sudah kamu miliki';
     ELSE
-        SELECT kode_bank INTO v_kode_bank
-        FROM bank
-        WHERE id_bank = p_id_bank;
-
-        SET v_nomor_va = CONCAT(
-            v_kode_bank,
-            DATE_FORMAT(NOW(), '%y%m%d%H%i%s'),
-            LPAD(FLOOR(RAND() * 100), 2, '0')
-        );
-
+        SELECT kode_bank INTO v_kode_bank FROM bank WHERE id_bank = p_id_bank;
+        SET v_nomor_va = CONCAT(v_kode_bank, DATE_FORMAT(NOW(), '%y%m%d%H%i%s'),
+                                LPAD(FLOOR(RAND() * 100), 2, '0'));
         INSERT INTO transaksi (id_user, total_pembelian, id_bank, nomor_va)
         VALUES (p_id_user, v_total, p_id_bank, v_nomor_va);
-
         SET v_id_transaksi = LAST_INSERT_ID();
         SET done = 0;
-
         OPEN cur;
-
         read_loop: LOOP
             FETCH cur INTO v_id_game, v_harga;
-
-            IF done THEN
-                LEAVE read_loop;
-            END IF;
-
+            IF done THEN LEAVE read_loop; END IF;
             INSERT INTO detailTransaksi (id_transaksi, id_game, harga_beli)
-            VALUES (v_id_transaksi, v_id_game, v_harga);
+            VALUES (v_id_transaksi, v_id_game, v_harga);  
         END LOOP;
-
         CLOSE cur;
         COMMIT;
-
-        SELECT v_id_transaksi AS id_transaksi,
-               v_total AS total_pembelian,
-               v_nomor_va AS nomor_va;
+        SELECT v_id_transaksi AS id_transaksi, v_total AS total_pembelian, v_nomor_va AS nomor_va;
     END IF;
 END$$
 
@@ -245,12 +227,19 @@ BEGIN
         RESIGNAL;
     END;
 
-    START TRANSACTION;
+    IF NOT func_cek_game_ada(p_id_game) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Game tidak ditemukan';
+    ELSE
+        START TRANSACTION;
 
-    SELECT * FROM v_rating_game
-    WHERE id_game = p_id_game;
+        SELECT id_rating, username, rating, review
+        FROM v_ulasan_game
+        WHERE id_game = p_id_game
+        ORDER BY id_rating DESC;
 
-    COMMIT;
+        COMMIT;
+    END IF;
 END$$
 
 -- UC4: mempublikasi game
@@ -355,7 +344,7 @@ END$$
 CREATE PROCEDURE proc_tambah_user(
     IN p_username VARCHAR(100),
     IN p_email VARCHAR(100),
-    IN p_password VARCHAR(255),   -- String hash Bcrypt dari FastAPI
+    IN p_password VARCHAR(255),   
     IN p_no_hp VARCHAR(20),
     IN p_nama_asli VARCHAR(100)
 )
@@ -371,16 +360,27 @@ BEGIN
     IF NOT func_cek_username_terisi(p_username) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Username harus diisi';
+    ELSEIF NOT func_cek_username_tanpa_at(p_username) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Username tidak boleh mengandung @';
+    ELSEIF NOT func_cek_username_belum_terpakai(p_username) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Username ini sudah dipakai';
     ELSEIF NOT func_cek_email_valid(p_email) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Format email tidak valid';
+    ELSEIF NOT func_cek_nama_asli_terisi(p_nama_asli) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Nama harus diisi';
+    ELSEIF NOT func_cek_no_hp_valid(p_no_hp) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'No. HP harus diisi dan hanya berisi angka (8-15 digit, boleh diawali +)';
     ELSEIF NOT func_cek_email_belum_terpakai(p_email) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Email ini sudah terdaftar';
     ELSE
         START TRANSACTION;
 
-        -- Langsung simpan hash Bcrypt dari FastAPI
         INSERT INTO user (username, email, password, no_hp, nama_asli)
         VALUES (p_username, p_email, p_password, p_no_hp, p_nama_asli);
 
@@ -419,10 +419,8 @@ BEGIN
     END IF;
 END$$
 
-DROP PROCEDURE IF EXISTS proc_ambil_login_user$$
-
 CREATE PROCEDURE proc_ambil_login_user(
-    IN p_email VARCHAR(100)
+    IN p_identitas VARCHAR(100)  
 )
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -434,7 +432,7 @@ BEGIN
     START TRANSACTION;
 
     SELECT * FROM v_kredensial_user
-    WHERE email = p_email;
+    WHERE email = p_identitas OR username = p_identitas;
 
     COMMIT;
 END$$
@@ -514,6 +512,27 @@ BEGIN
         ORDER BY id_game DESC;
 
         COMMIT;
+    END IF;
+END$$
+
+CREATE PROCEDURE proc_hapus_game(IN p_id_developer INT, IN p_id_game INT)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN ROLLBACK; RESIGNAL; END;
+
+    START TRANSACTION;
+
+    IF NOT func_game_milik_developer(p_id_developer, p_id_game) THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Game tidak ditemukan';
+    ELSEIF func_game_pernah_dibeli(p_id_game) THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Game sudah pernah dibeli, tidak bisa dihapus';
+    ELSE
+        DELETE FROM developerGame WHERE id_game = p_id_game;  
+        DELETE FROM game WHERE id_game = p_id_game;           
+        COMMIT;
+        SELECT p_id_game AS id_game_dihapus;
     END IF;
 END$$
 

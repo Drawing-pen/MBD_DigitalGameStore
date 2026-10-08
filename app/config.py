@@ -3,13 +3,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from dotenv import load_dotenv
 
-# config.py berada di app/, maka root proyek ada 1 tingkat di atas (parents[1])
 ROOT_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT_DIR / ".env")
 
 
 def _wajib(nama_var: str) -> str:
-    """Mengambil variabel .env dan melempar error jika belum diisi."""
     nilai = os.getenv(nama_var)
     if not nilai:
         raise RuntimeError(f"Variabel lingkungan '{nama_var}' wajib diisi di file .env")
@@ -38,7 +36,6 @@ def muat_settings() -> Settings:
     except ValueError:
         raise RuntimeError("Variabel 'DB_PORT' di .env harus berupa angka")
 
-    # Validasi durasi token JWT
     try:
         jwt_menit = int(os.getenv("JWT_MENIT_BERLAKU", "60"))
     except ValueError:
@@ -58,7 +55,6 @@ def muat_settings() -> Settings:
         jwt_algoritma="HS256",
         jwt_menit_berlaku=jwt_menit,
     )
-
 
 # Singleton instance
 settings = muat_settings()
