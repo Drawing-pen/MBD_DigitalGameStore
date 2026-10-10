@@ -10,7 +10,7 @@ class TambahKeranjangRequest(BaseModel):
 
 class CheckoutRequest(BaseModel):
     id_bank: int
-    daftar_game: list[int] = Field(min_length=1)   # game yang dipilih (dari keranjang atau beli langsung)
+    daftar_game: list[int] = Field(min_length=1)   
 
 
 class BeriRatingRequest(BaseModel):

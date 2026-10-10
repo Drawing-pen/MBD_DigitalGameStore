@@ -11,7 +11,7 @@ BEGIN
 
     SELECT COUNT(*) INTO v_ada
     FROM keranjang
-    WHERE id_user = p_id_user AND id_game = p_id_game;
+    WHERE id_user = p_id_user AND id_game = p_id_game AND aktif = 1;
 
     RETURN v_ada > 0;
 END$$
@@ -54,25 +54,9 @@ BEGIN
 
     SELECT COUNT(*) INTO v_jumlah
     FROM game
-    WHERE id_game = p_id_game;
+    WHERE id_game = p_id_game AND aktif = 1;
 
     RETURN v_jumlah > 0;
-END$$
-
-CREATE FUNCTION func_cek_nama_game_terisi(p_nama_game VARCHAR(100))
-RETURNS BOOLEAN
-DETERMINISTIC
-NO SQL
-BEGIN
-    RETURN TRIM(COALESCE(p_nama_game, '')) <> '';
-END$$
-
-CREATE FUNCTION func_cek_harga_game_valid(p_harga DECIMAL(12,2))
-RETURNS BOOLEAN
-DETERMINISTIC
-NO SQL
-BEGIN
-    RETURN p_harga IS NOT NULL AND p_harga >= 0 AND p_harga <= 9999999999.99;
 END$$
 
 CREATE FUNCTION func_cek_developer_ada(p_id_developer INT)
@@ -83,8 +67,9 @@ BEGIN
     DECLARE v_jumlah INT;
 
     SELECT COUNT(*) INTO v_jumlah
-    FROM developer
-    WHERE id_developer = p_id_developer;
+    FROM developer d
+    JOIN user u ON u.id_user = d.id_developer
+    WHERE d.id_developer = p_id_developer AND u.aktif = 1;
 
     RETURN v_jumlah > 0;
 END$$
@@ -98,25 +83,9 @@ BEGIN
 
     SELECT COUNT(*) INTO v_jumlah
     FROM game
-    WHERE nama_game = p_nama_game;
+    WHERE nama_game = p_nama_game AND aktif = 1;
 
     RETURN v_jumlah = 0;
-END$$
-
-CREATE FUNCTION func_cek_username_terisi(p_username VARCHAR(100))
-RETURNS BOOLEAN
-DETERMINISTIC
-NO SQL
-BEGIN
-    RETURN TRIM(COALESCE(p_username, '')) <> '';
-END$$
-
-CREATE FUNCTION func_cek_username_tanpa_at(p_username VARCHAR(100))
-RETURNS BOOLEAN
-DETERMINISTIC
-NO SQL
-BEGIN
-    RETURN LOCATE('@', COALESCE(p_username, '')) = 0;
 END$$
 
 CREATE FUNCTION func_cek_username_belum_terpakai(p_username VARCHAR(100))
@@ -131,30 +100,6 @@ BEGIN
     WHERE username = p_username;
 
     RETURN v_jumlah = 0;
-END$$
-
-CREATE FUNCTION func_cek_nama_asli_terisi(p_nama_asli VARCHAR(100))
-RETURNS BOOLEAN
-DETERMINISTIC
-NO SQL
-BEGIN
-    RETURN TRIM(COALESCE(p_nama_asli, '')) <> '';
-END$$
-
-CREATE FUNCTION func_cek_no_hp_valid(p_no_hp VARCHAR(20))
-RETURNS BOOLEAN
-DETERMINISTIC
-NO SQL
-BEGIN
-    RETURN COALESCE(p_no_hp, '') REGEXP '^[+]?[0-9]{8,15}$';
-END$$
-
-CREATE FUNCTION func_cek_email_valid(p_email VARCHAR(100))
-RETURNS BOOLEAN
-DETERMINISTIC
-NO SQL
-BEGIN
-    RETURN COALESCE(p_email, '') REGEXP '^[^@ ]+@[^@ ]+\\.[^@ ]+$';
 END$$
 
 CREATE FUNCTION func_cek_email_belum_terpakai(p_email VARCHAR(100))
@@ -180,31 +125,9 @@ BEGIN
 
     SELECT COUNT(*) INTO v_jumlah
     FROM user
-    WHERE id_user = p_id_user;
+    WHERE id_user = p_id_user AND aktif = 1;
 
     RETURN v_jumlah > 0;
-END$$
-
-CREATE FUNCTION func_cek_user_punya_transaksi(p_id_user INT)
-RETURNS BOOLEAN
-DETERMINISTIC
-READS SQL DATA
-BEGIN
-    DECLARE v_jumlah INT;
-
-    SELECT COUNT(*) INTO v_jumlah
-    FROM transaksi
-    WHERE id_user = p_id_user;
-
-    RETURN v_jumlah > 0;
-END$$
-
-CREATE FUNCTION func_cek_nama_developer_terisi(p_nama_developer VARCHAR(100))
-RETURNS BOOLEAN
-DETERMINISTIC
-NO SQL
-BEGIN
-    RETURN TRIM(COALESCE(p_nama_developer, '')) <> '';
 END$$
 
 CREATE FUNCTION func_cek_sudah_jadi_developer(p_id_user INT)
@@ -229,8 +152,9 @@ BEGIN
     DECLARE v_jumlah INT;
 
     SELECT COUNT(*) INTO v_jumlah
-    FROM developerGame
-    WHERE id_developer = p_id_developer;
+    FROM developerGame dg
+    JOIN game g ON g.id_game = dg.id_game
+    WHERE dg.id_developer = p_id_developer AND g.aktif = 1;
 
     RETURN v_jumlah > 0;
 END$$
@@ -254,7 +178,8 @@ BEGIN
     DECLARE v_jumlah INT;
     SELECT COUNT(*) INTO v_jumlah
     FROM game
-    WHERE FIND_IN_SET(id_game, p_daftar_game) > 0;
+    WHERE aktif = 1
+      AND CONCAT(',', p_daftar_game, ',') LIKE CONCAT('%,', id_game, ',%');
     RETURN v_jumlah;
 END$$
 
@@ -268,7 +193,7 @@ BEGIN
     FROM detailTransaksi d
     JOIN transaksi t ON t.id_transaksi = d.id_transaksi
     WHERE t.id_user = p_id_user
-      AND FIND_IN_SET(d.id_game, p_daftar_game) > 0;
+      AND CONCAT(',', p_daftar_game, ',') LIKE CONCAT('%,', d.id_game, ',%');
     RETURN v_jumlah;
 END$$
 
@@ -280,24 +205,23 @@ BEGIN
     DECLARE v_total DECIMAL(12,2);
     SELECT COALESCE(SUM(harga_game), 0) INTO v_total
     FROM game
-    WHERE FIND_IN_SET(id_game, p_daftar_game) > 0;
+    WHERE aktif = 1
+      AND CONCAT(',', p_daftar_game, ',') LIKE CONCAT('%,', id_game, ',%');
     RETURN v_total;
 END$$
 
 CREATE FUNCTION func_game_milik_developer(p_id_developer INT, p_id_game INT)
-RETURNS BOOLEAN DETERMINISTIC READS SQL DATA
+RETURNS BOOLEAN
+DETERMINISTIC
+READS SQL DATA
 BEGIN
     DECLARE v_ada INT;
-    SELECT COUNT(*) INTO v_ada FROM developerGame
-    WHERE id_developer = p_id_developer AND id_game = p_id_game;
-    RETURN v_ada > 0;
-END$$
 
-CREATE FUNCTION func_game_pernah_dibeli(p_id_game INT)
-RETURNS BOOLEAN DETERMINISTIC READS SQL DATA
-BEGIN
-    DECLARE v_ada INT;
-    SELECT COUNT(*) INTO v_ada FROM detailTransaksi WHERE id_game = p_id_game;
+    SELECT COUNT(*) INTO v_ada
+    FROM developerGame dg
+    JOIN game g ON g.id_game = dg.id_game
+    WHERE dg.id_developer = p_id_developer AND dg.id_game = p_id_game AND g.aktif = 1;
+
     RETURN v_ada > 0;
 END$$
 

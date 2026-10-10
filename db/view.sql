@@ -27,7 +27,8 @@ SELECT
     g.harga_game
 FROM keranjang k
 JOIN user u ON u.id_user = k.id_user
-JOIN game g ON g.id_game = k.id_game;
+JOIN game g ON g.id_game = k.id_game
+WHERE k.aktif = 1 AND g.aktif = 1;
 
 CREATE VIEW v_rating_game AS
 SELECT
@@ -37,15 +38,9 @@ SELECT
         SELECT ROUND(AVG(r.rating), 2)
         FROM rating r
         WHERE r.id_game = g.id_game
-    ) AS rata_rata_rating,
-    RANK() OVER (
-        ORDER BY (
-            SELECT AVG(r.rating)
-            FROM rating r
-            WHERE r.id_game = g.id_game
-        ) DESC
-    ) AS peringkat
-FROM game g;
+    ) AS rata_rata_rating
+FROM game g
+WHERE g.aktif = 1;
 
 CREATE VIEW v_ulasan_game AS
 SELECT
@@ -57,7 +52,8 @@ SELECT
     r.review
 FROM rating r
 JOIN user u ON u.id_user = r.id_user
-JOIN game g ON g.id_game = r.id_game;
+JOIN game g ON g.id_game = r.id_game
+WHERE g.aktif = 1;
 
 CREATE VIEW v_katalog_game AS
 SELECT
@@ -84,7 +80,8 @@ SELECT
         JOIN genre gr ON gr.id_genre = gg.id_genre
         WHERE gg.id_game = g.id_game
     ) AS genre
-FROM game g;
+FROM game g
+WHERE g.aktif = 1;
 
 CREATE VIEW v_genre AS
 SELECT
@@ -124,7 +121,8 @@ SELECT
         WHERE dt.id_game = g.id_game
     ) AS total_terjual
 FROM game g
-JOIN developerGame dg ON dg.id_game = g.id_game;
+JOIN developerGame dg ON dg.id_game = g.id_game
+WHERE g.aktif = 1;
 
 CREATE VIEW v_kredensial_user AS
 SELECT
@@ -143,9 +141,11 @@ SELECT
         FROM developer d
         WHERE d.id_developer = u.id_user
     ) AS nama_developer
-FROM user u;
+FROM user u
+WHERE u.aktif = 1;
 
 CREATE VIEW v_profil_user AS
 SELECT u.id_user, u.username, u.email, u.no_hp, u.nama_asli,
   EXISTS (SELECT 1 FROM developer d WHERE d.id_developer = u.id_user) AS adalah_developer
-FROM user u;
+FROM user u
+WHERE u.aktif = 1;

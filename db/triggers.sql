@@ -12,7 +12,8 @@ BEGIN
     FROM transaksi
     WHERE id_transaksi = NEW.id_transaksi;
 
-    DELETE FROM keranjang
+    UPDATE keranjang
+    SET aktif = 0
     WHERE id_user = v_id_user AND id_game = NEW.id_game;
 END$$
 
@@ -56,11 +57,16 @@ BEGIN
 END$$
 
 CREATE TRIGGER trg_kurangi_jumlah_game_developer
-AFTER DELETE ON developerGame
+AFTER UPDATE ON game
 FOR EACH ROW
 BEGIN
-    UPDATE developer SET jumlah_game = jumlah_game - 1
-    WHERE id_developer = OLD.id_developer;
+    IF OLD.aktif = 1 AND NEW.aktif = 0 THEN
+        UPDATE developer
+        SET jumlah_game = jumlah_game - 1
+        WHERE id_developer IN (
+            SELECT id_developer FROM developerGame WHERE id_game = NEW.id_game
+        );
+    END IF;
 END$$
 
 DELIMITER ;
