@@ -18,7 +18,7 @@ Jalankan file di folder `db/` sebagai `root`, dengan urutan ini:
 1. Salin `.env.example` menjadi `.env`, lalu isi: `DB_USER=akun_backend`, `DB_PASSWORD` (dari `privilege.sql`),
    dan `JWT_RAHASIA` (minimal 32 karakter, buat dengan
    `python -c "import secrets; print(secrets.token_hex(32))"`). Jangan di-commit.
-2. `python -m venv venv` lalu aktifkan (`venv\Scripts\activate` di Windows).
+2. `python -m venv venv` lalu aktifkan (`venv\Scripts\activate` di terminal).
 3. `pip install -r requirements.txt`
 4. `uvicorn app.main:app --reload`
 5. Buka `http://127.0.0.1:8000/docs`. Untuk endpoint yang butuh login: panggil `POST /api/auth/login`,
@@ -48,4 +48,3 @@ diambil dari token, bukan dari body atau path.
 | POST | /api/developer/daftar | ya | proc_daftar_developer |
 | POST | /api/game | ya | proc_tambah_game |
 | DELETE | /api/game/{id_game} | ya | proc_hapus_game |
-| GET | /api/developer/saya/game | ya | proc_lihat_game_developer |

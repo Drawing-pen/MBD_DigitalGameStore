@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/auth", tags=["Akun"])
 def _verifikasi(db, identitas: str, password: str) -> dict:
     try:
         with db.cursor() as cursor:
-            cursor.execute("CALL proc_ambil_login_user(%s)", (identitas,))
+            cursor.execute("CALL proc_login_user(%s)", (identitas,))
             user = cursor.fetchone()
             while cursor.nextset():
                 pass
@@ -32,7 +32,7 @@ def register(body: RegisterRequest, db=Depends(get_db)):
     try:
         with db.cursor() as cursor:
             cursor.execute(
-                "CALL proc_tambah_user(%s, %s, %s, %s, %s)",
+                "CALL proc_register_user(%s, %s, %s, %s, %s)",
                 (body.username, body.email, hashed_pwd, body.no_hp, body.nama_asli),
             )
             hasil = cursor.fetchone()

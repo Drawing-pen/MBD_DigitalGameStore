@@ -36,7 +36,7 @@ def beri_rating(body: BeriRatingRequest, user=Depends(user_saat_ini), db=Depends
 @router.get("")
 def lihat_semua_rating(db=Depends(get_db)):
     with db.cursor() as cursor:
-        cursor.execute("CALL proc_lihat_semua_rating()")
+        cursor.execute("CALL proc_lihat_ranking_game()")
         hasil = cursor.fetchall()
     return hasil
 

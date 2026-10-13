@@ -2,70 +2,14 @@ USE toko_game_digital;
 
 DELIMITER $$
 
-CREATE PROCEDURE proc_insert_genre(IN p_nama_genre VARCHAR(100))
-BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-    INSERT INTO genre (nama_genre) VALUES (p_nama_genre);
-    COMMIT;
-END$$
-
-CREATE PROCEDURE proc_insert_bank(
-    IN p_nama_bank VARCHAR(100),
-    IN p_kode_bank VARCHAR(10)
-)
-BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-    INSERT INTO bank (nama_bank, kode_bank) VALUES (p_nama_bank, p_kode_bank);
-    COMMIT;
-END$$
-
-CREATE PROCEDURE proc_lihat_genre()
-BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-    SELECT * FROM v_genre
-    ORDER BY nama_genre;
-    COMMIT;
-END$$
-
-CREATE PROCEDURE proc_lihat_bank()
-BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-    SELECT * FROM v_bank
-    ORDER BY nama_bank;
-    COMMIT;
-END$$
-
--- UC1: checkout game
+-- checkout game
 CREATE PROCEDURE proc_checkout(
     IN p_id_user INT, IN p_id_bank INT, IN p_daftar_game VARCHAR(1000))   
 BEGIN
     DECLARE v_id_transaksi INT;
     DECLARE v_total DECIMAL(12,2);
     DECLARE v_jumlah_diminta INT;
+    DECLARE v_jumlah_masuk INT;
     DECLARE v_kode_bank VARCHAR(10);
     DECLARE v_nomor_va VARCHAR(30);
 
@@ -77,8 +21,8 @@ BEGIN
 
     START TRANSACTION;
 
-    SET v_jumlah_diminta = func_hitung_game_diminta(p_daftar_game);
-    SET v_total = func_hitung_total_pilihan(p_daftar_game);
+    SET v_jumlah_diminta = func_hitung_game_dico(p_daftar_game);
+    SET v_total = func_hitung_total_hargaco(p_daftar_game);
 
     IF NOT func_cek_user_ada(p_id_user) THEN
         ROLLBACK;
@@ -118,6 +62,15 @@ BEGIN
         WHERE aktif = 1
           AND CONCAT(',', p_daftar_game, ',') LIKE CONCAT('%,', id_game, ',%');
 
+        SELECT COUNT(*) INTO v_jumlah_masuk
+        FROM detailTransaksi
+        WHERE id_transaksi = v_id_transaksi;
+
+        IF v_jumlah_masuk <> v_jumlah_diminta THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Ada game yang tidak ditemukan';
+        END IF;
+
         COMMIT;
 
         SELECT v_id_transaksi AS id_transaksi,
@@ -126,6 +79,7 @@ BEGIN
     END IF;
 END$$
 
+-- melihat riwayat pembelian
 CREATE PROCEDURE proc_lihat_riwayat_pembelian(IN p_id_user INT)
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -143,7 +97,7 @@ BEGIN
     COMMIT;
 END$$
 
--- UC2: menambahkan game ke keranjang
+-- menambahkan game ke keranjang
 CREATE PROCEDURE proc_tambah_keranjang(IN p_id_user INT, IN p_id_game INT)
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -174,6 +128,7 @@ BEGIN
     END IF;
 END$$
 
+-- melihat isi keranjang
 CREATE PROCEDURE proc_lihat_keranjang(IN p_id_user INT)
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -190,7 +145,7 @@ BEGIN
     COMMIT;
 END$$
 
--- UC3: memberi rating dan ulasan
+-- memberi rating dan ulasan
 CREATE PROCEDURE proc_beri_rating(
     IN p_id_user INT,
     IN p_id_game INT,
@@ -226,7 +181,8 @@ BEGIN
     END IF;
 END$$
 
-CREATE PROCEDURE proc_lihat_semua_rating()
+-- melihat ranking rating game
+CREATE PROCEDURE proc_lihat_ranking_game()
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -242,6 +198,7 @@ BEGIN
     COMMIT;
 END$$
 
+-- melihat rating dan review game
 CREATE PROCEDURE proc_lihat_rating_game(IN p_id_game INT)
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -265,8 +222,8 @@ BEGIN
     END IF;
 END$$
 
--- UC4: mempublikasi game
-CREATE PROCEDURE proc_tambah_game(
+-- mempublikasi game
+CREATE PROCEDURE proc_publish_game(
     IN p_nama_game VARCHAR(100),
     IN p_deskripsi VARCHAR(250),
     IN p_spesifikasi TEXT,
@@ -296,7 +253,7 @@ BEGIN
     ELSEIF NOT func_cek_developer_ada(p_id_developer) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Akun ini belum terdaftar sebagai developer';
-    ELSEIF NOT func_cek_nama_game_unik(v_nama_game) THEN
+    ELSEIF NOT func_cek_nama_game_tersedia(v_nama_game) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Nama game ini sudah dipakai, silakan pilih nama lain';
     ELSE
@@ -333,6 +290,7 @@ BEGIN
     END IF;
 END$$
 
+-- melihat katalog game
 CREATE PROCEDURE proc_lihat_katalog_game()
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -349,6 +307,7 @@ BEGIN
     COMMIT;
 END$$
 
+-- melihat log aktivitas
 CREATE PROCEDURE proc_lihat_log_aktivitas(IN p_id_user INT)
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -367,7 +326,7 @@ BEGIN
 END$$
 
 -- Register akun
-CREATE PROCEDURE proc_tambah_user(
+CREATE PROCEDURE proc_register_user(
     IN p_username VARCHAR(100),
     IN p_email VARCHAR(100),
     IN p_password VARCHAR(255),   
@@ -425,6 +384,7 @@ BEGIN
     END IF;
 END$$
 
+-- menghapus akun
 CREATE PROCEDURE proc_hapus_user(IN p_id_user INT)
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -450,7 +410,8 @@ BEGIN
     END IF;
 END$$
 
-CREATE PROCEDURE proc_ambil_login_user(
+-- melakukan login
+CREATE PROCEDURE proc_login_user(
     IN p_identitas VARCHAR(100)   
 )
 BEGIN
@@ -468,6 +429,7 @@ BEGIN
     COMMIT;
 END$$
 
+-- melihat profil
 CREATE PROCEDURE proc_lihat_profil_user(IN p_id_user INT)
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -485,7 +447,7 @@ BEGIN
 END$$
 
 -- Register developer
-CREATE PROCEDURE proc_daftar_developer(
+CREATE PROCEDURE proc_register_developer(
     IN p_id_user INT,
     IN p_nama_developer VARCHAR(100),
     IN p_deskripsi VARCHAR(250)
@@ -522,34 +484,7 @@ BEGIN
     END IF;
 END$$
 
-CREATE PROCEDURE proc_lihat_game_developer(IN p_id_developer INT)
-BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF NOT func_cek_developer_ada(p_id_developer) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Akun ini belum terdaftar sebagai developer';
-    ELSE
-        START TRANSACTION;
-
-        SELECT id_game,
-               nama_game,
-               harga_game,
-               release_date,
-               rata_rata_rating,
-               total_terjual
-        FROM v_game_developer
-        WHERE id_developer = p_id_developer
-        ORDER BY id_game DESC;
-
-        COMMIT;
-    END IF;
-END$$
-
+-- menghapus game
 CREATE PROCEDURE proc_hapus_game(IN p_id_developer INT, IN p_id_game INT)
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -572,6 +507,37 @@ BEGIN
 
         SELECT p_id_game AS id_game_dihapus;
     END IF;
+END$$
+
+-- melihat daftar genre
+CREATE PROCEDURE proc_lihat_genre()
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    START TRANSACTION;
+    SELECT * FROM v_genre
+    ORDER BY nama_genre;
+    COMMIT;
+END$$
+
+
+-- melihat daftar bank
+CREATE PROCEDURE proc_lihat_bank()
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    START TRANSACTION;
+    SELECT * FROM v_bank
+    ORDER BY nama_bank;
+    COMMIT;
 END$$
 
 DELIMITER ;

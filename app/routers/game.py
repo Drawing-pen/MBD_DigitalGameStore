@@ -13,7 +13,7 @@ def tambah_game(body: TambahGameRequest, user=Depends(user_saat_ini), db=Depends
     try:
         with db.cursor() as cursor:
             cursor.execute(
-                "CALL proc_tambah_game(%s, %s, %s, %s, %s, %s, %s)",
+                "CALL proc_publish_game(%s, %s, %s, %s, %s, %s, %s)",
                 (
                     body.nama_game,
                     body.deskripsi,

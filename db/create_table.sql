@@ -17,10 +17,10 @@ CREATE TABLE user (
 );
 
 CREATE TABLE developer (
-    id_developer        INT PRIMARY KEY,
-    nama_developer      VARCHAR(100) NOT NULL,
+    id_developer INT PRIMARY KEY,
+    nama_developer VARCHAR(100) NOT NULL,
     deskripsi_developer VARCHAR(250),
-    jumlah_game         INT NOT NULL DEFAULT 0,
+    jumlah_game INT NOT NULL DEFAULT 0,
     FOREIGN KEY (id_developer) REFERENCES user(id_user)
 );
 

@@ -74,7 +74,7 @@ BEGIN
     RETURN v_jumlah > 0;
 END$$
 
-CREATE FUNCTION func_cek_nama_game_unik(p_nama_game VARCHAR(100))
+CREATE FUNCTION func_cek_nama_game_tersedia(p_nama_game VARCHAR(100))
 RETURNS BOOLEAN
 DETERMINISTIC
 READS SQL DATA
@@ -159,7 +159,7 @@ BEGIN
     RETURN v_jumlah > 0;
 END$$
 
-CREATE FUNCTION func_hitung_game_diminta(p_daftar_game VARCHAR(1000))
+CREATE FUNCTION func_hitung_game_dico(p_daftar_game VARCHAR(1000))
 RETURNS INT
 DETERMINISTIC
 NO SQL
@@ -197,7 +197,7 @@ BEGIN
     RETURN v_jumlah;
 END$$
 
-CREATE FUNCTION func_hitung_total_pilihan(p_daftar_game VARCHAR(1000))
+CREATE FUNCTION func_hitung_total_hargaco(p_daftar_game VARCHAR(1000))
 RETURNS DECIMAL(12,2)
 DETERMINISTIC
 READS SQL DATA

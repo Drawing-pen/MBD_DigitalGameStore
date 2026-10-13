@@ -103,27 +103,6 @@ SELECT
     waktu
 FROM log_aktivitas;
 
-CREATE VIEW v_game_developer AS
-SELECT
-    dg.id_developer,
-    g.id_game,
-    g.nama_game,
-    g.harga_game,
-    g.release_date,
-    (
-        SELECT ROUND(AVG(r.rating), 2)
-        FROM rating r
-        WHERE r.id_game = g.id_game
-    ) AS rata_rata_rating,
-    (
-        SELECT COUNT(*)
-        FROM detailTransaksi dt
-        WHERE dt.id_game = g.id_game
-    ) AS total_terjual
-FROM game g
-JOIN developerGame dg ON dg.id_game = g.id_game
-WHERE g.aktif = 1;
-
 CREATE VIEW v_kredensial_user AS
 SELECT
     u.id_user,
